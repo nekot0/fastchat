@@ -1,0 +1,62 @@
+services:
+  fastchat-controller:
+    image: fastchat:latest
+    ports:
+      - "21001:21001"
+    entrypoint: [
+      "python3.9",
+      "-m", "fastchat.serve.controller",
+      "--dispatch-method", "lottery",
+      "--host", "0.0.0.0", "--port", "21001"
+    ]
+  fastchat-model-worker-1:
+    image: fastchat:latest
+    volumes:
+      - /home/ubuntu/models/phi-4:/model
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0", "1"]
+              capabilities: [gpu]
+    entrypoint: [
+      "python3.9",
+      "-m", "fastchat.serve.model_worker",
+      "--model-names", "phi-4",
+      "--model-path", "/model",
+      "--device", "cuda",
+      "--num-gpus", "2",
+      "--max-gpu-memory", "22GiB",
+      "--worker-address", "http://fastchat-model-worker-1:21002",
+      "--controller-address", "http://fastchat-controller:21001",
+      "--host", "0.0.0.0", "--port", "21002"
+    ]
+  fastchat-model-worker-2:
+    image: fastchat:latest
+    volumes:
+      - /home/ubuntu/models/phi-4:/model
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["2", "3"]
+              capabilities: [gpu]
+    entrypoint: [
+      "python3.9",
+      "-m", "fastchat.serve.model_worker",
+      "--model-names", "phi-4",
+      "--model-path", "/model",
+      "--device", "cuda",
+      "--num-gpus", "2",
+      "--max-gpu-memory", "22GiB",
+      "--worker-address", "http://fastchat-model-worker-2:21003",
+      "--controller-address", "http://fastchat-controller:21001",
+      "--host", "0.0.0.0", "--port", "21003"
+    ]
+  fastchat-api-server:
+    image: fastchat:latest
+    ports:
+      - "8000:8000"
+    entrypoint: ["python3.9", "-m", "fastchat.serve.openai_api_server", "--controller-address", "http://fastchat-controller:21001", "--host", "0.0.0.0", "--port", "8000"]
