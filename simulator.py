@@ -6,7 +6,7 @@ from collections import defaultdict
 
 random.seed(42)
 
-URL = "http://10.0.0.247:8000/v1/chat/completions"
+URL = ""
 HEADERS = {"Content-Type": "application/json"}
 
 USER_COUNT = 5
